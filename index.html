@@ -1,0 +1,278 @@
+<!doctype html>
+<html lang="no">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Kveldsloggen</title>
+<meta name="description" content="Logg skritt, kl. 18 og trening hver kveld – og få en emoji som belønning.">
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#eef1f6" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0f1420" media="(prefers-color-scheme: dark)">
+<link rel="icon" href="icons/icon-192.png" type="image/png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Kveldsloggen">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Figtree:wght@400;500;600&display=swap">
+<style>
+:root {
+  --bg: #eef1f6; --surface: #ffffff; --ink: #18202e; --muted: #5d6779; --line: #d6dce6;
+  --lamp: #d98a14; --lamp-soft: #fbecd2; --done: #2f7d5b; --done-soft: #dcefe5;
+  --display: "Bricolage Grotesque", "Avenir Next", system-ui, sans-serif;
+  --body: "Figtree", "Segoe UI", system-ui, sans-serif;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0f1420; --surface: #182031; --ink: #e8ecf3; --muted: #9aa5b8; --line: #2a3448;
+    --lamp: #f2a93b; --lamp-soft: #3a2e1a; --done: #5cc495; --done-soft: #173628; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0f1420; --surface: #182031; --ink: #e8ecf3; --muted: #9aa5b8; --line: #2a3448;
+  --lamp: #f2a93b; --lamp-soft: #3a2e1a; --done: #5cc495; --done-soft: #173628; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html { -webkit-tap-highlight-color: transparent; }
+body {
+  margin: 0; background: var(--bg); color: var(--ink); font-family: var(--body); font-size: 16px; line-height: 1.45;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-top: calc(20px + env(safe-area-inset-top, 0px));
+  padding-bottom: calc(40px + env(safe-area-inset-bottom, 0px));
+  -webkit-user-select: none; user-select: none;
+}
+main { max-width: 460px; margin: 0 auto; display: flex; flex-direction: column; gap: 22px; }
+h1, h2 { font-family: var(--display); margin: 0; text-wrap: balance; }
+.daybar { display: flex; align-items: center; gap: 10px; }
+.daybar .label { flex: 1; min-width: 0; text-align: center; }
+.daybar h1 { font-size: 1.6rem; font-weight: 800; letter-spacing: -0.01em; }
+.daybar .sub { color: var(--muted); font-size: .9rem; }
+.nav { width: 44px; height: 44px; border-radius: 50%; border: 1px solid var(--line); background: var(--surface); color: var(--ink); font-size: 1.2rem; cursor: pointer; flex: none; }
+.nav:disabled { opacity: .3; cursor: default; }
+.tiles { display: flex; flex-direction: column; gap: 12px; }
+.tile { display: flex; align-items: center; gap: 14px; width: 100%; text-align: left; padding: 16px 18px; border-radius: 18px; border: 2px solid var(--line); background: var(--surface); color: var(--ink); font: inherit; cursor: pointer; transition: background .15s, border-color .15s, transform .1s; }
+.tile:active { transform: scale(.98); }
+.tile .ico { font-size: 1.8rem; width: 2.2rem; text-align: center; flex: none; }
+.tile .txt { flex: 1; min-width: 0; }
+.tile .name { font-weight: 600; font-size: 1.05rem; }
+.tile .hint { color: var(--muted); font-size: .85rem; }
+.tile .check { width: 30px; height: 30px; border-radius: 50%; border: 2px solid var(--line); flex: none; display: grid; place-items: center; font-weight: 800; color: transparent; }
+.tile[aria-pressed="true"] { border-color: var(--done); background: var(--done-soft); }
+.tile[aria-pressed="true"] .check { background: var(--done); border-color: var(--done); color: var(--surface); }
+.seg { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
+.seg button { font: inherit; font-size: .9rem; padding: 6px 14px; border-radius: 999px; border: 1px solid var(--line); background: var(--bg); color: var(--ink); cursor: pointer; }
+.seg button[aria-pressed="true"] { background: var(--done); border-color: var(--done); color: var(--surface); font-weight: 600; }
+.tile.train { flex-wrap: wrap; cursor: default; }
+.tile.train .txt { flex-basis: calc(100% - 4rem); }
+button:focus-visible { outline: 3px solid var(--lamp); outline-offset: 2px; }
+.reward { background: var(--lamp-soft); border-radius: 22px; padding: 22px 18px; text-align: center; display: flex; flex-direction: column; align-items: center; gap: 4px; }
+.reward .big { font-size: 4.2rem; line-height: 1; }
+.reward .big.pop { animation: pop .45s ease-out; }
+@keyframes pop { 0% { transform: scale(.4); } 70% { transform: scale(1.18); } 100% { transform: scale(1); } }
+.reward h2 { font-size: 1.25rem; font-weight: 800; margin-top: 8px; }
+.reward p { margin: 0; color: var(--muted); font-size: .92rem; }
+.history h2 { font-size: .8rem; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); font-family: var(--body); font-weight: 600; margin-bottom: 10px; }
+.strip { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; }
+.cell { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 6px 2px; text-align: center; font: inherit; color: var(--ink); cursor: pointer; }
+.cell .e { font-size: 1.3rem; display: block; min-height: 1.7rem; }
+.cell .d { font-size: .7rem; color: var(--muted); font-variant-numeric: tabular-nums; }
+.cell.sel { border-color: var(--lamp); border-width: 2px; }
+.stats { display: flex; gap: 10px; margin-top: 12px; flex-wrap: wrap; }
+.stat { flex: 1 1 120px; background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 10px 14px; }
+.stat b { font-family: var(--display); font-size: 1.5rem; font-variant-numeric: tabular-nums; display: block; }
+.stat span { color: var(--muted); font-size: .82rem; }
+.legend { color: var(--muted); font-size: .82rem; margin-top: 10px; }
+.backup { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; }
+.backup button, .backup label { font: inherit; font-size: .85rem; padding: 8px 14px; border-radius: 999px; border: 1px solid var(--line); background: var(--surface); color: var(--muted); cursor: pointer; }
+.backup input { display: none; }
+.note { color: var(--muted); font-size: .8rem; text-align: center; min-height: 1em; }
+@media (prefers-reduced-motion: reduce) { .reward .big.pop { animation: none; } .tile { transition: none; } }
+</style>
+</head>
+<body>
+<main>
+  <div class="daybar">
+    <button class="nav" id="prev" aria-label="Forrige dag">‹</button>
+    <div class="label"><h1 id="dayTitle">I kveld</h1><div class="sub" id="dayDate"></div></div>
+    <button class="nav" id="next" aria-label="Neste dag">›</button>
+  </div>
+
+  <div class="tiles">
+    <button class="tile" id="t-steps" aria-pressed="false">
+      <span class="ico">👟</span>
+      <span class="txt"><span class="name">10 000 skritt</span><br><span class="hint">Nådde jeg skrittmålet i dag?</span></span>
+      <span class="check">✓</span>
+    </button>
+    <button class="tile" id="t-cutoff" aria-pressed="false">
+      <span class="ico">🕕</span>
+      <span class="txt"><span class="name">Ingen mat etter kl. 18</span><br><span class="hint">Kjøkkenet stengt i kveld</span></span>
+      <span class="check">✓</span>
+    </button>
+    <div class="tile train" id="t-train">
+      <span class="ico">💪</span>
+      <span class="txt"><span class="name">Trening</span><br><span class="hint">Bonus, ikke krav hver dag</span>
+        <span class="seg" role="group" aria-label="Type trening">
+          <button id="w-styrke" aria-pressed="false">Styrke</button>
+          <button id="w-lop" aria-pressed="false">Løp</button>
+          <button id="w-begge" aria-pressed="false">Begge</button>
+        </span>
+      </span>
+    </div>
+  </div>
+
+  <section class="reward" aria-live="polite">
+    <div class="big" id="rEmoji">🌙</div>
+    <h2 id="rTitle">Klar for loggen</h2>
+    <p id="rText">Trykk på det du fikk til i dag.</p>
+  </section>
+
+  <section class="history">
+    <h2>Siste 14 dager</h2>
+    <div class="strip" id="strip"></div>
+    <div class="stats">
+      <div class="stat"><b id="sStreak">0</b><span>dager på rad med ⭐ eller 🏆</span></div>
+      <div class="stat"><b id="sWeek">0</b><span>treningsøkter siste 7 dager</span></div>
+    </div>
+    <div class="legend">🏆 alt + trening · ⭐ skritt og kl. 18 · 👍 ett av to · 🌙 hviledag</div>
+  </section>
+
+  <div class="backup">
+    <button id="exportBtn">Lagre sikkerhetskopi</button>
+    <label>Hent sikkerhetskopi<input type="file" id="importFile" accept="application/json,.json"></label>
+  </div>
+  <div class="note" id="note"></div>
+</main>
+
+<script>
+(function () {
+  const DAYS = ["søndag","mandag","tirsdag","onsdag","torsdag","fredag","lørdag"];
+  const MONTHS = ["jan","feb","mar","apr","mai","jun","jul","aug","sep","okt","nov","des"];
+  const KEY = "kveldslogg";
+  const pad = n => String(n).padStart(2, "0");
+  const key = d => d.getFullYear() + "-" + pad(d.getMonth() + 1) + "-" + pad(d.getDate());
+  const fromKey = k => { const [y, m, d] = k.split("-").map(Number); return new Date(y, m - 1, d); };
+  const addDays = (k, n) => { const d = fromKey(k); d.setDate(d.getDate() + n); return key(d); };
+  const today = () => key(new Date());
+  const $ = id => document.getElementById(id);
+
+  let entries = {};
+  try { entries = JSON.parse(localStorage.getItem(KEY) || "{}") || {}; } catch (_) { entries = {}; }
+  let current = today();
+
+  function save() {
+    try { localStorage.setItem(KEY, JSON.stringify(entries)); }
+    catch (_) { $("note").textContent = "Kunne ikke lagre på denne enheten."; }
+  }
+
+  function score(e) {
+    if (!e) return null;
+    const base = (e.steps ? 1 : 0) + (e.cutoff ? 1 : 0);
+    if (base === 2 && e.workout) return "🏆";
+    if (base === 2) return "⭐";
+    if (base === 1 || e.workout) return "👍";
+    return "🌙";
+  }
+  const MSG = {
+    "🏆": ["Full pott!", "Skritt, kl. 18 og trening. Sterk dag."],
+    "⭐": ["Begge dagsmålene i boks", "Skritt og stengt kjøkken. Det er dette som teller."],
+    "👍": ["Godt bidrag", "Ett steg i riktig retning. I morgen er en ny sjanse."],
+    "🌙": ["Hviledag", "Ingenting logget som nådd. Det går fint, i morgen er ny dag."]
+  };
+
+  function render(popped) {
+    const t = today();
+    if (current > t) current = t;
+    const e = entries[current] || {};
+    const d = fromKey(current);
+    $("dayTitle").textContent = current === t ? "I kveld" : current === addDays(t, -1) ? "I går" : DAYS[d.getDay()][0].toUpperCase() + DAYS[d.getDay()].slice(1);
+    $("dayDate").textContent = DAYS[d.getDay()] + " " + d.getDate() + ". " + MONTHS[d.getMonth()];
+    $("next").disabled = current >= t;
+    $("t-steps").setAttribute("aria-pressed", !!e.steps);
+    $("t-cutoff").setAttribute("aria-pressed", !!e.cutoff);
+    ["styrke","lop","begge"].forEach(w => $("w-" + w).setAttribute("aria-pressed", e.workout === w));
+
+    const s = entries[current] ? score(e) : null;
+    const big = $("rEmoji");
+    if (s) { big.textContent = s; $("rTitle").textContent = MSG[s][0]; $("rText").textContent = MSG[s][1]; }
+    else { big.textContent = "🌙"; $("rTitle").textContent = "Klar for loggen"; $("rText").textContent = "Trykk på det du fikk til i dag."; }
+    if (popped) { big.classList.remove("pop"); void big.offsetWidth; big.classList.add("pop"); }
+
+    const strip = $("strip"); strip.textContent = "";
+    for (let i = 13; i >= 0; i--) {
+      const k = addDays(t, -i), dd = fromKey(k);
+      const b = document.createElement("button");
+      b.className = "cell" + (k === current ? " sel" : "");
+      b.setAttribute("aria-label", "Vis " + DAYS[dd.getDay()] + " " + dd.getDate() + ". " + MONTHS[dd.getMonth()]);
+      const e1 = document.createElement("span"); e1.className = "e"; e1.textContent = score(entries[k]) || "·";
+      const d1 = document.createElement("span"); d1.className = "d"; d1.textContent = dd.getDate() + "/" + (dd.getMonth() + 1);
+      b.append(e1, d1);
+      b.onclick = () => { current = k; render(); };
+      strip.append(b);
+    }
+    let streak = 0, k = t;
+    if (!entries[k]) k = addDays(k, -1);
+    while (["⭐","🏆"].includes(score(entries[k]))) { streak++; k = addDays(k, -1); }
+    $("sStreak").textContent = streak;
+    let w = 0; for (let i = 0; i < 7; i++) { const x = entries[addDays(t, -i)]; if (x && x.workout) w += x.workout === "begge" ? 2 : 1; }
+    $("sWeek").textContent = w;
+  }
+
+  function change(patch) {
+    entries[current] = Object.assign({ steps: false, cutoff: false, workout: null }, entries[current], patch);
+    save();
+    render(true);
+    if (navigator.vibrate) { try { navigator.vibrate(15); } catch (_) {} }
+  }
+  $("t-steps").onclick = () => change({ steps: !(entries[current] || {}).steps });
+  $("t-cutoff").onclick = () => change({ cutoff: !(entries[current] || {}).cutoff });
+  ["styrke","lop","begge"].forEach(w => $("w-" + w).onclick = () => change({ workout: (entries[current] || {}).workout === w ? null : w }));
+  $("prev").onclick = () => { current = addDays(current, -1); render(); };
+  $("next").onclick = () => { if (current < today()) { current = addDays(current, 1); render(); } };
+
+  // Sikkerhetskopi: data ligger bare på denne enheten, så det er lurt å lagre en kopi av og til.
+  $("exportBtn").onclick = async () => {
+    const json = JSON.stringify({ app: "kveldsloggen", version: 1, entries }, null, 2);
+    const file = new File([json], "kveldsloggen-" + today() + ".json", { type: "application/json" });
+    try {
+      if (navigator.canShare && navigator.canShare({ files: [file] })) { await navigator.share({ files: [file], title: "Kveldsloggen" }); return; }
+    } catch (err) { if (err && err.name === "AbortError") return; }
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(file); a.download = file.name; a.click();
+    setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+  };
+  $("importFile").onchange = async ev => {
+    const f = ev.target.files[0]; ev.target.value = "";
+    if (!f) return;
+    try {
+      const data = JSON.parse(await f.text());
+      const incoming = data && data.entries;
+      if (!incoming || typeof incoming !== "object") throw new Error();
+      let n = 0;
+      for (const [k, v] of Object.entries(incoming)) {
+        if (/^\d{4}-\d{2}-\d{2}$/.test(k) && v && typeof v === "object") {
+          entries[k] = { steps: !!v.steps, cutoff: !!v.cutoff, workout: ["styrke","lop","begge"].includes(v.workout) ? v.workout : null };
+          n++;
+        }
+      }
+      save(); render();
+      $("note").textContent = n + " dager hentet fra sikkerhetskopien.";
+    } catch (_) { $("note").textContent = "Fant ikke en gyldig sikkerhetskopi i filen."; }
+  };
+
+  // Oppdater visningen når appen åpnes igjen etter midnatt
+  document.addEventListener("visibilitychange", () => { if (!document.hidden) render(); });
+
+  render();
+
+  if ("serviceWorker" in navigator) {
+    window.addEventListener("load", () => navigator.serviceWorker.register("sw.js").catch(() => {}));
+  }
+  if (navigator.storage && navigator.storage.persist) { navigator.storage.persist().catch(() => {}); }
+})();
+</script>
+</body>
+</html>
